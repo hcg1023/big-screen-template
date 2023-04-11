@@ -8,6 +8,7 @@ const isProduction = process.env.NODE_ENV !== 'development'
 module.exports = defineConfig({
   transpileDependencies: true,
   productionSourceMap: false,
+  lintOnSave: 'warning',
   css: {
     loaderOptions: {
       postcss: {

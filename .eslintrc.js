@@ -1,10 +1,3 @@
-const fs = require('fs')
-const path = require('path')
-
-const prettierConfig = JSON.parse(
-  fs.readFileSync(path.resolve(process.cwd(), '.prettierrc')).toString(),
-)
-
 module.exports = {
   root: true,
   env: {
@@ -22,8 +15,10 @@ module.exports = {
   rules: {
     // "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
     // "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off",
-    'prettier/prettier': ['error', prettierConfig],
+    'prettier/prettier': ['warn', {}, { usePrettierrc: true }],
     'vue/multi-word-component-names': 0,
     '@typescript-eslint/no-explicit-any': 0,
+    '@typescript-eslint/ban-ts-comment': 0,
+    '@typescript-eslint/no-unnecessary-type-constraint': 0,
   },
 }
