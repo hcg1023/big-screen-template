@@ -1,5 +1,5 @@
-import store from './index'
-import { computed } from 'vue'
+import store, { IActions, IMutations } from './index'
+import { computed, ComputedRef, Ref } from 'vue'
 import { CommitOptions, DispatchOptions } from 'vuex'
 
 type IStore = typeof store
@@ -10,6 +10,18 @@ type IStore = typeof store
  */
 export function useStore(): IStore {
   return store
+}
+
+export function useState<T extends keyof IStore['state']>(key: T): Ref<IStore['state'][T]> {
+  const store = useStore()
+  return computed({
+    get() {
+      return store.state[key]
+    },
+    set(val) {
+      store.state[key] = val
+    },
+  })
 }
 
 /**
@@ -27,9 +39,9 @@ export function useGetter<T extends keyof IStore['getters']>(key: T): IStore['ge
  * @param {string} key
  * @returns {function(payload: any, options?: any): void}
  */
-export function useMutation<T extends string>(key: T) {
+export function useMutation<T extends keyof IMutations>(key: T) {
   const store = useStore()
-  return (payload: any, options?: CommitOptions) => {
+  return (payload: Parameters<IMutations[T]>[1], options?: CommitOptions) => {
     return store.commit(key, payload, options)
   }
 }
@@ -40,7 +52,8 @@ export function useMutation<T extends string>(key: T) {
  * @param {string} key
  * @returns {function(payload: any, options?: DispatchOptions): Promise<unknown>}
  */
-export function useAction<T extends string>(key: T) {
+export function useAction<T extends keyof IActions>(key: T) {
   const store = useStore()
-  return (payload: any, options?: DispatchOptions) => store.dispatch(key, payload, options)
+  return (payload: Parameters<IActions[T]>[1], options?: DispatchOptions) =>
+    store.dispatch(key, payload, options)
 }

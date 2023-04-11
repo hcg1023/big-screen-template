@@ -1,11 +1,11 @@
-import { InternalHttpCode } from '@/constants'
+import { BusinessHttpCode } from '@/constants'
 
 export class MockAdapterResponse<T> {
-  constructor(public code: InternalHttpCode, public data: T) {}
+  constructor(public code: BusinessHttpCode, public data: T) {}
 }
 
 export class MockAdapterSuccessResponse<T> extends MockAdapterResponse<T> {
   constructor(data: T) {
-    super(InternalHttpCode.SUCCESS, data)
+    super(BusinessHttpCode.SUCCESS, data)
   }
 }

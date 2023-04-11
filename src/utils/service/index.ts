@@ -1,9 +1,9 @@
 import axios, { AxiosRequestConfig } from 'axios'
-import type { AxiosInstance } from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 import { useServiceRequestInterceptors } from '@/utils/service/interceptors/request'
 import { useServiceResponseInterceptors } from '@/utils/service/interceptors/response'
 import { BASE_API } from '@/config'
-import { InternalHttpCode } from '@/constants'
+import { BusinessHttpCode } from '@/constants'
 
 export interface IInternalAxiosConfig {
   /**
@@ -13,7 +13,7 @@ export interface IInternalAxiosConfig {
   /**
    * 排除错误信息的InternalHttpCode
    */
-  excludesMessage?: (InternalHttpCode | string)[]
+  excludesMessage?: (BusinessHttpCode | string)[]
 }
 
 export type IBaseServiceConfig<IgnoreKeys extends keyof AxiosRequestConfig> = Omit<
@@ -21,6 +21,8 @@ export type IBaseServiceConfig<IgnoreKeys extends keyof AxiosRequestConfig> = Om
   IgnoreKeys
 > &
   IInternalAxiosConfig
+
+type IDownloadFileFunctor = (filename?: string) => void
 
 class BaseService {
   private _services: AxiosInstance
@@ -36,27 +38,35 @@ class BaseService {
     // 仅在开发环境使用mock
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const createMockAdapter = require('@/mock')
-      createMockAdapter(service)
+      // const { createMockAdapter } = require('@/mock')
+      // createMockAdapter(service)
     }
 
     this._services = service
   }
 
-  get<T, R = any>(url: string, params: T, config: IBaseServiceConfig<'params'> = {}): Promise<R> {
+  get<T = any, R = any>(
+    url: string,
+    params?: T,
+    config: IBaseServiceConfig<'params'> = {},
+  ): Promise<R> {
     return this._services.get(url, {
       params,
       ...config,
     })
   }
 
-  post<T, R = any>(url: string, data: T, config: IBaseServiceConfig<'data'> = {}): Promise<R> {
+  post<T = any, R = any>(
+    url: string,
+    data?: T,
+    config: IBaseServiceConfig<'data'> = {},
+  ): Promise<R> {
     return this._services.post(url, data, config)
   }
 
-  postParams<T, R = any>(
+  postParams<T = any, R = any>(
     url: string,
-    params: T,
+    params?: T,
     config: IBaseServiceConfig<'params'> = {},
   ): Promise<R> {
     return this._services.post(url, null, {
@@ -65,9 +75,52 @@ class BaseService {
     })
   }
 
-  postForm<T, R = any>(url: string, data: T, config: IBaseServiceConfig<'data'> = {}): Promise<R> {
+  postForm<T = any, R = any>(
+    url: string,
+    data?: T,
+    config: IBaseServiceConfig<'data'> = {},
+  ): Promise<R> {
     return this._services.postForm(url, data, config)
+  }
+
+  postExport<T = any, R = any>(
+    url: string,
+    data?: T,
+    config: IBaseServiceConfig<'data'> = {},
+  ): Promise<IDownloadFileFunctor> {
+    return this.post(url, data, {
+      responseType: 'blob',
+      ...config,
+    }).then(this.createDownloadFileFunctor)
+  }
+
+  private createDownloadFileFunctor(response: AxiosResponse): IDownloadFileFunctor {
+    const { data, headers } = response
+    const disposition = headers['Content-Disposition'] || headers['content-disposition'] || ''
+    const dispositionMatch = disposition.match(/filename=(.*)/)
+    let resolveFileName = ''
+    if (dispositionMatch) {
+      resolveFileName = decodeURIComponent(dispositionMatch[1])
+    }
+    return (filename?: string) => {
+      if (filename) {
+        resolveFileName = filename
+      }
+      // create file link in browser's memory
+      const href = URL.createObjectURL(data)
+
+      // create "a" HTML element with href to file & click
+      const link = document.createElement('a')
+      link.href = href
+      link.setAttribute('download', resolveFileName) //or any other extension
+      document.body.appendChild(link)
+      link.click()
+
+      // clean up "a" element & remove ObjectURL
+      document.body.removeChild(link)
+      URL.revokeObjectURL(href)
+    }
   }
 }
 
-export default new BaseService(BASE_API)
+export const service = new BaseService(BASE_API)

@@ -1,4 +1,4 @@
-export enum InternalHttpCode {
+export enum BusinessHttpCode {
   SUCCESS,
   AuthExpired = 401,
   AuthError = 403,

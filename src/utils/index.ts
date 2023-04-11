@@ -1,3 +1,3 @@
-import service from '@/utils/service'
+export * from '@/utils/service'
 
-export { service }
+export * from './date'
